@@ -8,7 +8,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -16,11 +15,6 @@ jobs:
       - name: Unzip archive
         run: |
           unzip -q global_rat.zip
-          if [ ! -d "global_rat" ]; then
-            echo "Ошибка: папка global_rat не появилась после распаковки"
-            ls -la
-            exit 1
-          fi
           ls -la global_rat/
 
       - name: Setup Python
@@ -34,18 +28,25 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK
+      - name: Install Android SDK command line tools
         run: |
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
           unzip -q commandlinetools-linux-11076708_latest.zip
-          mkdir -p android-sdk/cmdline-tools
-          mv cmdline-tools android-sdk/cmdline-tools/latest
-          echo "$GITHUB_WORKSPACE/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          echo "ANDROID_HOME=$GITHUB_WORKSPACE/android-sdk" >> $GITHUB_ENV
-          echo "ANDROID_SDK_ROOT=$GITHUB_WORKSPACE/android-sdk" >> $GITHUB_ENV
-          yes | ./android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1
-          ./android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "build-tools;30.0.3" "platforms;android-30" > /dev/null 2>&1
-          echo "$GITHUB_WORKSPACE/android-sdk/build-tools/30.0.3" >> $GITHUB_PATH
+          mkdir -p $HOME/android-sdk/cmdline-tools
+          mv cmdline-tools $HOME/android-sdk/cmdline-tools/latest
+          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
+
+      - name: Accept licenses and install build-tools
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "build-tools;30.0.3" "platforms;android-30"
+          echo "$ANDROID_HOME/build-tools/30.0.3" >> $GITHUB_PATH
+
+      - name: Verify aidl
+        run: |
+          aidl --help || true
 
       - name: Install buildozer
         run: pip install buildozer cython

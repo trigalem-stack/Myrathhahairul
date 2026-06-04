@@ -22,28 +22,27 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Setup Java 8 (for old sdkmanager)
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '8'
+          java-version: '17'
 
-      - name: Setup Android SDK manually
+      - name: Install Android SDK (old version for Java 17 compatibility)
         run: |
-          # Download command line tools
-          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-          unzip commandlinetools-linux-11076708_latest.zip -d $HOME
+          # Скачиваем старую версию command line tools (совместима с Java 17)
+          wget https://dl.google.com/android/repository/commandlinetools-linux-9123335_latest.zip
+          unzip commandlinetools-linux-9123335_latest.zip
           mkdir -p $HOME/android-sdk/cmdline-tools
-          mv $HOME/cmdline-tools $HOME/android-sdk/cmdline-tools/latest
+          mv cmdline-tools $HOME/android-sdk/cmdline-tools/latest
           
-          # Set environment variables
           echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
           echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
           echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
           echo "$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
           echo "$HOME/android-sdk/build-tools/30.0.3" >> $GITHUB_PATH
           
-          # Accept licenses and install components
+          # Принимаем лицензии и устанавливаем компоненты
           yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
           $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-30" "build-tools;30.0.3"
 

@@ -22,11 +22,11 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install buildozer
+      - name: Install buildozer and dependencies
         run: |
           pip install buildozer cython
           sudo apt update
-          sudo apt install -y openjdk-17-jdk zip unzip
+          sudo apt install -y openjdk-17-jdk zip unzip aidl
 
       - name: Build APK
         run: |

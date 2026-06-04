@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -22,33 +23,36 @@ jobs:
         with:
           python-version: '3.11'
 
+      # Java 17 — строго обязателен для новых версий SDK
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Android SDK (old version for Java 17 compatibility)
+      # Устанавливаем Android SDK через официальный экшен
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      # Устанавливаем build-tools (именно там лежит нужный aidl)
+      # Версия 34.0.0 актуальна на 2026 год и содержит aidl
+      - name: Install build-tools with aidl
         run: |
-          # Скачиваем старую версию command line tools (совместима с Java 17)
-          wget https://dl.google.com/android/repository/commandlinetools-linux-9123335_latest.zip
-          unzip commandlinetools-linux-9123335_latest.zip
-          mkdir -p $HOME/android-sdk/cmdline-tools
-          mv cmdline-tools $HOME/android-sdk/cmdline-tools/latest
-          
-          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
-          echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
-          echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          echo "$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
-          echo "$HOME/android-sdk/build-tools/30.0.3" >> $GITHUB_PATH
-          
-          # Принимаем лицензии и устанавливаем компоненты
-          yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
-          $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-30" "build-tools;30.0.3"
+          yes | sdkmanager --licenses
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
+      # Добавляем путь к build-tools в PATH, чтобы Buildozer нашел aidl
+      - name: Add build-tools to PATH
+        run: echo "$ANDROID_SDK_ROOT/build-tools/34.0.0" >> $GITHUB_PATH
+
+      # Проверяем, что aidl теперь доступен
+      - name: Verify aidl
+        run: |
+          which aidl
+          aidl --version || echo "aidl found (version command may vary)"
 
       - name: Install buildozer
-        run: |
-          pip install buildozer cython
+        run: pip install buildozer cython
 
       - name: Build APK
         run: |

@@ -46,15 +46,15 @@ jobs:
         run: |
           pip install buildozer cython
 
-      - name: Create buildozer spec with SDK paths
+      - name: Configure buildozer.spec
         run: |
           cd global_rat
-          cat >> buildozer.spec << EOF
-
-          [app]
-          android.sdk_path = $ANDROID_SDK_ROOT
-          android.ndk_path = /usr/local/lib/android/sdk/ndk-bundle
-          EOF
+          # Удаляем старые строки с android.sdk_path и android.ndk_path если они есть
+          sed -i '/android.sdk_path/d' buildozer.spec
+          sed -i '/android.ndk_path/d' buildozer.spec
+          # Добавляем новые строки в конец файла
+          echo "android.sdk_path = $ANDROID_SDK_ROOT" >> buildozer.spec
+          echo "android.ndk_path = /usr/local/lib/android/sdk/ndk-bundle" >> buildozer.spec
 
       - name: Build APK
         run: |

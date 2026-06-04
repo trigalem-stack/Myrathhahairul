@@ -1,0 +1,40 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract archive
+        run: |
+          tar -xzf global_rat.tar.gz
+          cd global_rat
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install buildozer
+        run: |
+          pip install buildozer cython
+          sudo apt update
+          sudo apt install -y openjdk-17-jdk zip unzip
+
+      - name: Build APK
+        run: |
+          cd global_rat
+          buildozer android debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: global_rat_apk
+          path: global_rat/bin/*.apk

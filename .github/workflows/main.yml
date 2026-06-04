@@ -1,0 +1,62 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Unzip archive
+        run: |
+          unzip -q global_rat.zip
+          if [ ! -d "global_rat" ]; then
+            echo "Ошибка: папка global_rat не появилась после распаковки"
+            ls -la
+            exit 1
+          fi
+          ls -la global_rat/
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        run: |
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q commandlinetools-linux-11076708_latest.zip
+          mkdir -p android-sdk/cmdline-tools
+          mv cmdline-tools android-sdk/cmdline-tools/latest
+          echo "$GITHUB_WORKSPACE/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "ANDROID_HOME=$GITHUB_WORKSPACE/android-sdk" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$GITHUB_WORKSPACE/android-sdk" >> $GITHUB_ENV
+          yes | ./android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1
+          ./android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "build-tools;30.0.3" "platforms;android-30" > /dev/null 2>&1
+          echo "$GITHUB_WORKSPACE/android-sdk/build-tools/30.0.3" >> $GITHUB_PATH
+
+      - name: Install buildozer
+        run: pip install buildozer cython
+
+      - name: Build APK
+        run: |
+          cd global_rat
+          buildozer android debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: global_rat_apk
+          path: global_rat/bin/*.apk
